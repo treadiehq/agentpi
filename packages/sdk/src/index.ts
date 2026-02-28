@@ -4,6 +4,8 @@ export { createDiscoveryHandler } from './discovery';
 export { createConnectHandler } from './connect';
 export { MemoryJtiStore, MemoryIdempotencyStore } from './stores';
 export { prismaProvision } from './prisma';
+export { createPrompt, inject401Prompt } from './prompt';
+export type { AgentPIPrompt } from './prompt';
 export type {
   AgentPIConfig,
   ResolvedConfig,

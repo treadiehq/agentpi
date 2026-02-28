@@ -37,6 +37,7 @@ export interface AgentPIConfig {
   scopes: string[];
   provision: (ctx: ProvisionContext) => Promise<ProvisionResult>;
 
+  baseUrl?: string;
   planId?: string;
   limits?: Partial<Limits>;
   jwksUrl?: string;

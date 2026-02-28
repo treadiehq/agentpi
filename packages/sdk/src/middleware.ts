@@ -1,6 +1,7 @@
 import { AgentPIConfig, resolveConfig } from './config';
 import { createDiscoveryHandler } from './discovery';
 import { createConnectHandler } from './connect';
+import { createPrompt } from './prompt';
 
 interface MiddlewareReq {
   method?: string;
@@ -16,12 +17,14 @@ interface MiddlewareRes {
   setHeader?: (name: string, value: string) => void;
   end?: (body: string) => void;
   send?: (body: unknown) => void;
+  json?: (body: unknown) => void;
 }
 
 export function agentpi(config: AgentPIConfig) {
   const resolved = resolveConfig(config);
   const discoveryHandler = createDiscoveryHandler(resolved);
   const connectHandler = createConnectHandler(resolved);
+  const prompt = config.baseUrl ? createPrompt(config.baseUrl) : null;
 
   return (req: MiddlewareReq, res: MiddlewareRes, next?: () => void) => {
     const url = (req.url || '').split('?')[0];
@@ -67,6 +70,29 @@ export function agentpi(config: AgentPIConfig) {
       };
       connectHandler(adapted, resAdapter);
       return;
+    }
+
+    if (prompt && next) {
+      const origSend = res.send;
+      const origJson = res.json;
+
+      const inject = (body: unknown): unknown => {
+        if (res.statusCode === 401 && body && typeof body === 'object') {
+          return { ...(body as Record<string, unknown>), agentpi: prompt };
+        }
+        return body;
+      };
+
+      if (origSend) {
+        res.send = function (body: unknown) {
+          return origSend.call(this, inject(body));
+        };
+      }
+      if (origJson) {
+        res.json = function (body: unknown) {
+          return origJson.call(this, inject(body));
+        };
+      }
     }
 
     if (next) next();

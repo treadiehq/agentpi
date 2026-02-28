@@ -60,6 +60,7 @@ app.use(agentpi({
 | `tool` | no | `TOOL_ID` env |
 | `scopes` | yes | — |
 | `provision` | yes | — |
+| `baseUrl` | no | — (enables auto 401 prompt) |
 | `planId` | no | `'free'` |
 | `limits` | no | `{ rpm: 60, dailyQuota: 1000, concurrency: 5 }` |
 | `jwksUrl` | no | `AGENTPI_JWKS_URL` env or `http://localhost:4010/.well-known/jwks.json` |
@@ -122,6 +123,29 @@ app.use(agentpi({
   idempotencyStore: new MyPrismaIdempotencyStore(prisma),
   provision: prismaProvision(prisma),
 }));
+```
+
+## "Continue with AgentPI" prompt
+
+Set `baseUrl` and the middleware auto-injects a prompt into every 401 response:
+
+```typescript
+app.use(agentpi({
+  tool: 'my_tool',
+  scopes: ['read', 'write'],
+  baseUrl: 'https://api.example.com',
+  provision: prismaProvision(prisma),
+}));
+```
+
+Any 401 now includes `{ "agentpi": { "prompt": "Continue with AgentPI", "discovery": "..." } }`. Agents follow the discovery URL, connect, and retry automatically.
+
+For frameworks where the middleware can't intercept responses (e.g. NestJS), use `createPrompt` manually:
+
+```typescript
+import { createPrompt } from '@agentpi/sdk';
+const prompt = createPrompt('https://api.example.com');
+// add `agentpi: prompt` to your 401 response bodies
 ```
 
 ## Advanced: manual route mounting

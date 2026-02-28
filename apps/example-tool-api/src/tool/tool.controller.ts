@@ -29,7 +29,6 @@ export class ToolController {
 
     const apiKey = auth.slice(7);
     const parts = apiKey.split('_');
-    // format: tk_live_<8hex>_<secret>
     if (parts.length < 4) {
       throw new HttpException(
         { error: { code: 'unauthorized', message: 'Invalid API key format' } },
