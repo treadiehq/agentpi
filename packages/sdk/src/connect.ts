@@ -57,10 +57,6 @@ export function createConnectHandler(config: ResolvedConfig) {
         config.toolId,
       );
 
-      if (await config.jtiStore.has(grant.jti)) {
-        throw new ReplayError();
-      }
-
       const claim = grant.agentpi;
       const requestHash = hashBody({
         orgId: claim.org_id,
@@ -68,6 +64,7 @@ export function createConnectHandler(config: ResolvedConfig) {
         scopes: claim.scopes,
         limits: claim.limits,
         workspace: claim.workspace,
+        nonce: claim.nonce,
       });
 
       const existing = await config.idempotencyStore.get(
@@ -81,6 +78,12 @@ export function createConnectHandler(config: ResolvedConfig) {
         }
         res.status(200).send(JSON.parse(existing.responseJson));
         return;
+      }
+
+      try {
+        await config.jtiStore.add(grant.jti, new Date(grant.exp * 1000));
+      } catch {
+        throw new ReplayError();
       }
 
       const appliedScopes = validateScopes(claim.scopes, config.maxScopes);
@@ -105,8 +108,6 @@ export function createConnectHandler(config: ResolvedConfig) {
         applied_scopes: appliedScopes,
         applied_limits: appliedLimits,
       };
-
-      await config.jtiStore.add(grant.jti, new Date(grant.exp * 1000));
 
       const responseJson = JSON.stringify(wireResult);
       await config.idempotencyStore.set(

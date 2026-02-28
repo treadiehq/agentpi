@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { KeysService } from '../keys/keys.service';
 import { v4 as uuid } from 'uuid';
 import {
@@ -25,6 +25,18 @@ export class GrantsService {
   async issueGrant(body: ConnectGrantRequest): Promise<ConnectGrantResponse> {
     if (body.tool_id !== this.toolId) {
       throw new ForbiddenException(`Unknown tool_id: ${body.tool_id}`);
+    }
+    if (!Array.isArray(body.requested_scopes)) {
+      throw new BadRequestException('requested_scopes is required and must be an array');
+    }
+    if (!body.requested_limits || typeof body.requested_limits !== 'object') {
+      throw new BadRequestException('requested_limits is required and must be an object');
+    }
+    if (!body.workspace || typeof body.workspace !== 'object') {
+      throw new BadRequestException('workspace is required and must be an object');
+    }
+    if (!body.nonce || typeof body.nonce !== 'string') {
+      throw new BadRequestException('nonce is required and must be a string');
     }
 
     const jti = uuid();
