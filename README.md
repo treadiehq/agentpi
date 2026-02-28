@@ -1,8 +1,54 @@
 # AgentPI
 
-**"Connect with AgentPI"** — autonomous signup and login via API in minutes. Like "Continue with Google" but for agents.
+**Let agents instantly create a free workspace and start using your API — no human signup required.**
 
-An agent connects to any tool that implements the AgentPI protocol and either attaches to an existing workspace or creates a new free-tier workspace, then receives tool credentials. No human approval required.
+AgentPI is "Continue with Google" for AI agents. Add one middleware to your app, and any agent can connect, get a workspace, and receive API credentials automatically.
+
+## See it work
+
+```
+━━━ Step 1: Connect (signup or login) ━━━
+
+🔍 Discovering tool at https://api.example.com...
+   Tool: Example Tool (example_tool)
+   Plan: free | Scopes: read, deploy, write
+
+🔑 Requesting connect grant from AgentPI...
+   Grant issued (expires in 300s)
+
+🔗 Connecting to tool...
+
+✅ Connected!
+   Workspace: 0717316e-8689-4ee9-b262-52a57546c61c
+   Agent:     8f33858d-bac1-40d0-830b-e2bd3c7611a5
+   API Key:   tk_live_be1130d0_lwXVT5Qzg1IU-rsbv5HbFNi6dES44TOa
+   Scopes:    read, deploy
+
+━━━ Step 2: Call tool API with returned credentials ━━━
+
+📡 POST https://api.example.com/deploy
+
+✅ API call succeeded:
+{
+  "deployed": true,
+  "message": "Deployment successful!",
+  "workspace_id": "0717316e-8689-4ee9-b262-52a57546c61c"
+}
+```
+
+Agent connects → workspace created → API call works. No signup form, no email verification, no human.
+
+## Quick Start
+
+```bash
+# Prerequisites: Node 20+, pnpm, Docker
+pnpm install && pnpm dev
+```
+
+```bash
+pnpm demo    # connect → provision → API call
+pnpm verify  # 17-point conformance check
+```
 
 ## Architecture
 
@@ -121,20 +167,6 @@ See `apps/example-tool-api` for a full NestJS + Prisma example with custom store
 All errors return:
 ```json
 { "error": { "code": "...", "message": "...", "detail": {} } }
-```
-
-## Quick Start (Dev)
-
-```bash
-# Prerequisites: Node 20+, pnpm, Docker
-pnpm install && pnpm dev
-```
-
-This starts Postgres, the AgentPI service on `:4010`, and an example tool on `:4020`. Use the dev CLI to run the full flow:
-
-```bash
-pnpm demo    # connect → provision → API call
-pnpm verify  # 17-point conformance check
 ```
 
 ## Running Tests
