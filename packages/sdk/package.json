@@ -2,7 +2,7 @@
   "name": "@agentpi/sdk",
   "version": "0.1.0",
   "description": "Add autonomous agent signup and login to your API in minutes",
-  "license": "MIT",
+  "license": "FSL-1.1-MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/treadiehq/agentpi.git",

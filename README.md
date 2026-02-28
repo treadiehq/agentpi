@@ -155,3 +155,8 @@ See `.env` for all configuration. Key variables:
 | `TOOL_ID`              | `tool_example`             | Tool identifier (service + SDK)      |
 | `TOOL_PORT`            | `4020`                     | Example tool port                    |
 | `DATABASE_URL`         | `postgresql://...`         | Postgres connection string           |
+
+
+## License
+
+[FSL-1.1-MIT](LICENSE)
