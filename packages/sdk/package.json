@@ -1,7 +1,7 @@
 {
   "name": "@agentpi/sdk",
   "version": "0.1.0",
-  "description": "Add autonomous agent signup to your API in minutes",
+  "description": "Add autonomous agent signup and login to your API in minutes",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 # AgentPI
 
-**"Connect with AgentPI"** — autonomous signup and login via API. Like "Continue with Google" but for agents.
+**"Connect with AgentPI"** — autonomous signup and login via API in minutes. Like "Continue with Google" but for agents.
 
 An agent connects to any tool that implements the AgentPI protocol and either attaches to an existing workspace or creates a new free-tier workspace, then receives tool credentials. No human approval required.
 
