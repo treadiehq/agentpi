@@ -1,4 +1,4 @@
-# @agentpi/cli
+# AgentPI CLI
 
 Dev CLI for testing the AgentPI connect flow. Not intended for production use — agents should call the HTTP protocol directly.
 

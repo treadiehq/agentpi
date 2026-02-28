@@ -1,8 +1,16 @@
 {
   "name": "@agentpi/shared",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Shared types, errors, and constants for AgentPI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/treadiehq/agentpi.git",
+    "directory": "packages/shared"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"

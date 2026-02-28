@@ -1,6 +1,6 @@
-# @agentpi/sdk
+# AgentPI SDK
 
-SDK for adding "Connect with AgentPI" to your tool. One middleware, one required field.
+SDK for adding "Connect with AgentPI" to your tool. Add autonomous agent signup and login to your API in minutes.
 
 ## Install
 

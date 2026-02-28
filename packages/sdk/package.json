@@ -1,8 +1,16 @@
 {
   "name": "@agentpi/sdk",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Add autonomous agent signup to your API in minutes",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/treadiehq/agentpi.git",
+    "directory": "packages/sdk"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
