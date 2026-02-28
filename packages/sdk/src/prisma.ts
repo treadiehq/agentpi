@@ -27,6 +27,10 @@ interface PrismaLike {
         scopes: string[];
       };
     }): Promise<unknown>;
+    updateMany(args: {
+      where: { toolAgentId: string; revokedAt: null };
+      data: { revokedAt: Date };
+    }): Promise<unknown>;
   };
 }
 
@@ -59,6 +63,11 @@ export function prismaProvision(prisma: PrismaLike) {
       },
       create: { workspaceId: workspace.id, agentpiAgentId: ctx.agentId, status: 'active' },
       update: { status: 'active' },
+    });
+
+    await prisma.toolApiKey.updateMany({
+      where: { toolAgentId: agent.id, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
 
     const { full, prefix, secret } = generateApiKey();

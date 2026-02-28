@@ -14,6 +14,10 @@ export class MemoryJtiStore implements JtiStore {
   }
 
   async add(jti: string, expiresAt: Date): Promise<void> {
+    const existing = this.used.get(jti);
+    if (existing !== undefined && Date.now() <= existing) {
+      throw new Error('JTI already used');
+    }
     this.used.set(jti, expiresAt.getTime());
   }
 }

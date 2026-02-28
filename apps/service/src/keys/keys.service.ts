@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as jose from 'jose';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 
@@ -23,13 +23,26 @@ export class KeysService implements OnModuleInit {
     const privPath = resolve(keysDir, 'private.json');
     const pubPath = resolve(keysDir, 'public.json');
 
-    if (existsSync(privPath) && existsSync(pubPath)) {
+    const privExists = existsSync(privPath);
+    const pubExists = existsSync(pubPath);
+
+    if (privExists && pubExists) {
       const privJson = JSON.parse(await readFile(privPath, 'utf-8'));
       const pubJson = JSON.parse(await readFile(pubPath, 'utf-8'));
       this.privateKey = (await jose.importJWK(privJson, 'RS256')) as jose.KeyLike;
       this.publicJwk = pubJson;
       this.kid = pubJson.kid;
       this.logger.log(`Loaded existing keypair (kid: ${this.kid})`);
+    } else if (privExists || pubExists) {
+      this.logger.error(
+        `Partial key state detected (private=${privExists}, public=${pubExists}). ` +
+          'This indicates a previous write failure. ' +
+          'Refusing to start to prevent accidental key rotation.',
+      );
+      throw new Error(
+        'Partial key state detected — manual intervention required. ' +
+          'Remove the incomplete key file or restore the missing one, then restart.',
+      );
     } else {
       const { publicKey, privateKey } = await jose.generateKeyPair('RS256', {
         extractable: true,
@@ -43,8 +56,14 @@ export class KeysService implements OnModuleInit {
       pubJwk.use = 'sig';
       pubJwk.alg = 'RS256';
       this.publicJwk = pubJwk;
-      await writeFile(privPath, JSON.stringify(privJwk, null, 2));
-      await writeFile(pubPath, JSON.stringify(pubJwk, null, 2));
+
+      const privTmpPath = `${privPath}.tmp`;
+      const pubTmpPath = `${pubPath}.tmp`;
+      await writeFile(privTmpPath, JSON.stringify(privJwk, null, 2));
+      await writeFile(pubTmpPath, JSON.stringify(pubJwk, null, 2));
+      await rename(privTmpPath, privPath);
+      await rename(pubTmpPath, pubPath);
+
       this.logger.log(`Generated new keypair (kid: ${this.kid})`);
     }
   }

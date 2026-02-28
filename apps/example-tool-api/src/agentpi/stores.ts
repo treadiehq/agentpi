@@ -10,7 +10,14 @@ export class PrismaJtiStore implements JtiStore {
   }
 
   async add(jti: string, expiresAt: Date): Promise<void> {
-    await this.prisma.usedJti.create({ data: { jti, expiresAt } });
+    try {
+      await this.prisma.usedJti.create({ data: { jti, expiresAt } });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        throw new Error('JTI already used');
+      }
+      throw error;
+    }
   }
 }
 

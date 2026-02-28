@@ -8,12 +8,17 @@ import { resolve } from 'path';
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    new FastifyAdapter(),
-  );
-  const port = process.env.AGENTPI_PORT || 4010;
-  await app.listen(port, '0.0.0.0');
-  console.log(`AgentPI service listening on :${port}`);
+  try {
+    const app = await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      new FastifyAdapter(),
+    );
+    const port = process.env.AGENTPI_PORT || 4010;
+    await app.listen(port, '0.0.0.0');
+    console.log(`AgentPI service listening on :${port}`);
+  } catch (error) {
+    console.error('Failed to start AgentPI service:', error);
+    process.exit(1);
+  }
 }
 bootstrap();

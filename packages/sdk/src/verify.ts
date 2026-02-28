@@ -1,8 +1,7 @@
 import * as jose from 'jose';
 import { Claim, InvalidGrantError } from '@agentpi/shared';
 
-let jwksCache: jose.JSONWebKeySet | null = null;
-let jwksCacheTime = 0;
+const jwksCache = new Map<string, { jwks: jose.JSONWebKeySet; time: number }>();
 const CACHE_TTL = 60_000;
 
 export interface VerifiedGrant {
@@ -19,7 +18,8 @@ export async function verifyConnectGrant(
   expectedAudience: string,
 ): Promise<VerifiedGrant> {
   const now = Date.now();
-  if (!jwksCache || now - jwksCacheTime > CACHE_TTL) {
+  const cached = jwksCache.get(jwksUrl);
+  if (!cached || now - cached.time > CACHE_TTL) {
     let res: Response;
     try {
       res = await fetch(jwksUrl);
@@ -35,11 +35,13 @@ export async function verifyConnectGrant(
         { jwks_url: jwksUrl, status: res.status },
       );
     }
-    jwksCache = (await res.json()) as jose.JSONWebKeySet;
-    jwksCacheTime = now;
+    jwksCache.set(jwksUrl, {
+      jwks: (await res.json()) as jose.JSONWebKeySet,
+      time: now,
+    });
   }
 
-  const JWKS = jose.createLocalJWKSet(jwksCache);
+  const JWKS = jose.createLocalJWKSet(jwksCache.get(jwksUrl)!.jwks);
 
   let payload: jose.JWTPayload;
   try {
@@ -104,6 +106,12 @@ export async function verifyConnectGrant(
     throw new InvalidGrantError(
       'Missing required JWT claim: agentpi',
       { reason: 'missing_claim', claim: 'agentpi' },
+    );
+  }
+  if (typeof p.exp !== 'number') {
+    throw new InvalidGrantError(
+      'Missing or invalid required JWT claim: exp',
+      { reason: 'missing_claim', claim: 'exp' },
     );
   }
 
