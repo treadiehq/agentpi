@@ -1,0 +1,18 @@
+{
+  "name": "agentpi",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "bash scripts/dev.sh",
+    "db:push": "pnpm --filter @agentpi/example-tool-api db:push",
+    "db:generate": "pnpm --filter @agentpi/example-tool-api db:generate",
+    "demo": "tsx packages/cli/src/cli.ts demo http://localhost:4020",
+    "verify": "tsx packages/cli/src/cli.ts verify http://localhost:4020",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r exec rm -rf dist node_modules"
+  }
+}

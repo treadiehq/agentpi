@@ -1,0 +1,39 @@
+{
+  "name": "@agentpi/example-tool-api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "npx prisma generate && nest start --watch",
+    "start": "node dist/main.js",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@agentpi/shared": "workspace:*",
+    "@agentpi/sdk": "workspace:*",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-fastify": "^11.0.0",
+    "@prisma/client": "^6.0.0",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.7.4",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.19.13",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "prisma": "^6.0.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.7.0"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  }
+}

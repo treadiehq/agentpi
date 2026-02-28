@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Workspace {
+  id        String      @id @default(uuid())
+  orgId     String      @unique
+  name      String
+  planId    String      @default("free")
+  createdAt DateTime    @default(now())
+  agents    ToolAgent[]
+  apiKeys   ToolApiKey[]
+}
+
+model ToolAgent {
+  id             String      @id @default(uuid())
+  workspaceId    String
+  agentpiAgentId String
+  status         String      @default("active")
+  createdAt      DateTime    @default(now())
+  workspace      Workspace   @relation(fields: [workspaceId], references: [id])
+  apiKeys        ToolApiKey[]
+
+  @@unique([workspaceId, agentpiAgentId])
+}
+
+model ToolApiKey {
+  id           String    @id @default(uuid())
+  workspaceId  String
+  toolAgentId  String
+  hashedSecret String
+  prefix       String
+  scopes       String[]
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  lastUsedAt   DateTime?
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  toolAgent    ToolAgent @relation(fields: [toolAgentId], references: [id])
+}
+
+model Idempotency {
+  id           String   @id @default(uuid())
+  key          String
+  toolId       String
+  orgId        String
+  requestHash  String
+  responseJson String
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@unique([key, orgId, toolId])
+}
+
+model UsedJti {
+  id        String   @id @default(uuid())
+  jti       String   @unique
+  expiresAt DateTime
+}
