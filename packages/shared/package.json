@@ -1,6 +1,6 @@
 {
   "name": "@agentpi/shared",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared types, errors, and constants for AgentPI",
   "license": "FSL-1.1-MIT",
   "repository": {
