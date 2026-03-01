@@ -91,7 +91,7 @@ Any 401 response now includes:
 { "agentpi": { "prompt": "Continue with AgentPI", "discovery": "https://api.example.com/.well-known/agentpi.json" } }
 ```
 
-The agent follows the `discovery` URL, connects, gets credentials, and retries — all automatic.
+The agent follows the `discovery` URL, connects, gets credentials, and retries, all automatic.
 
 ## How it works
 
