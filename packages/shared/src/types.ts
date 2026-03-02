@@ -37,6 +37,13 @@ export interface Claim {
   nonce: string;
 }
 
+/* ─── Credential types ─── */
+export type CredentialType = 'api_key' | 'http_signature';
+
+export type ConnectCredentials =
+  | { type: 'api_key'; api_key: string }
+  | { type: 'http_signature'; key_id: string; algorithm: string };
+
 /* ─── Discovery ─── */
 export interface PlanInfo {
   plan_id: string;
@@ -49,6 +56,7 @@ export interface DiscoveryDocument {
   tool_id: string;
   tool_name: string;
   connect_endpoint: string;
+  credential_types: CredentialType[];
   plans: PlanInfo[];
   default_plan_id: string;
   default_limits: Limits;
@@ -60,10 +68,7 @@ export interface ConnectResult {
   status: 'active' | 'pending';
   tool_workspace_id: string;
   tool_agent_id: string;
-  credentials: {
-    type: 'api_key';
-    api_key: string;
-  };
+  credentials: ConnectCredentials;
   applied_plan_id: string;
   applied_scopes: string[];
   applied_limits: Limits;

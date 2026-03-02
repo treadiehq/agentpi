@@ -1,4 +1,4 @@
-import { Limits, ProvisionContext } from '@agentpi/shared';
+import { Limits, ProvisionContext, CredentialType } from '@agentpi/shared';
 import {
   IDEMPOTENCY_HEADER,
   IDEMPOTENCY_TTL_SECONDS,
@@ -22,19 +22,31 @@ export interface IdempotencyStore {
   set(key: string, orgId: string, toolId: string, entry: IdempotencyEntry): Promise<void>;
 }
 
-/* ─── Simplified provision return ─── */
+/* ─── Provision result (discriminated union) ─── */
 
-export interface ProvisionResult {
+export interface ApiKeyProvisionResult {
   workspaceId: string;
   agentId: string;
+  type?: 'api_key';
   apiKey: string;
 }
+
+export interface HttpSignatureProvisionResult {
+  workspaceId: string;
+  agentId: string;
+  type: 'http_signature';
+  keyId: string;
+  algorithm?: string;
+}
+
+export type ProvisionResult = ApiKeyProvisionResult | HttpSignatureProvisionResult;
 
 /* ─── User-facing config ─── */
 
 export interface AgentPIConfig {
   tool?: string | { id: string; name?: string };
   scopes: string[];
+  credentialTypes?: CredentialType[];
   provision: (ctx: ProvisionContext) => Promise<ProvisionResult>;
 
   baseUrl?: string;
@@ -52,6 +64,7 @@ export interface ResolvedConfig {
   toolId: string;
   toolName: string;
   connectEndpoint: string;
+  credentialTypes: CredentialType[];
   agentpiIssuer: string;
   jwksUrl: string;
   idempotencyHeader: string;
@@ -91,6 +104,7 @@ export function resolveConfig(config: AgentPIConfig): ResolvedConfig {
     toolId: tool.id,
     toolName: tool.name,
     connectEndpoint: '/v1/agentpi/connect',
+    credentialTypes: config.credentialTypes || ['api_key'],
     agentpiIssuer: config.issuer || process.env.AGENTPI_ISSUER || 'https://agentpi.local',
     jwksUrl:
       config.jwksUrl ||

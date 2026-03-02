@@ -7,6 +7,7 @@ export function createDiscoveryHandler(config: ResolvedConfig) {
     tool_id: config.toolId,
     tool_name: config.toolName,
     connect_endpoint: config.connectEndpoint,
+    credential_types: config.credentialTypes,
     plans: [
       {
         plan_id: config.planId,

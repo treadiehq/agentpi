@@ -45,6 +45,61 @@ The SDK auto-mounts `GET /.well-known/agentpi.json` and `POST /v1/agentpi/connec
 
 `tool` can be a string (name is derived automatically) or `{ id: 'my_tool', name: 'My Tool' }`. Falls back to `TOOL_ID` env if omitted.
 
+## 3. Credential modes
+
+AgentPI supports two credential modes. Tools can offer one or both.
+
+### API key (default)
+
+The tool issues a traditional API key on connect. The agent uses `Authorization: Bearer <api_key>` on subsequent requests.
+
+```typescript
+app.use(agentpi({
+  tool: 'my_tool',
+  scopes: ['read', 'write'],
+  provision: prismaProvision(prisma),
+}));
+```
+
+### HTTP Signature (Vestauth / RFC 9421)
+
+No shared secret. The tool registers the agent's key ID on connect. The agent signs every subsequent request with its private key per [RFC 9421](https://datatracker.ietf.org/doc/rfc9421/) / [Web-Bot-Auth](https://datatracker.ietf.org/doc/html/draft-meunier-web-bot-auth-architecture). Tools verify using the agent's public key.
+
+```typescript
+import { agentpi, prismaHttpSignatureProvision } from '@agentpi/sdk';
+
+app.use(agentpi({
+  tool: 'my_tool',
+  scopes: ['read', 'write'],
+  credentialTypes: ['http_signature'],
+  provision: prismaHttpSignatureProvision(prisma),
+}));
+```
+
+The connect response returns `{ type: 'http_signature', key_id, algorithm }` instead of an API key. The agent then uses Vestauth (or any RFC 9421 signer) to authenticate subsequent requests.
+
+### Both modes
+
+Offer agents a choice by supporting both and letting your provision logic decide:
+
+```typescript
+app.use(agentpi({
+  tool: 'my_tool',
+  scopes: ['read', 'write'],
+  credentialTypes: ['api_key', 'http_signature'],
+  provision: async (ctx) => {
+    const ws = await db.upsertWorkspace(ctx.orgId);
+    const agent = await db.upsertAgent(ws.id, ctx.agentId);
+
+    if (agentPrefersSignatures(ctx)) {
+      return { workspaceId: ws.id, agentId: agent.id, type: 'http_signature', keyId: agent.keyId };
+    }
+    const key = await db.issueApiKey(agent.id, ctx.requestedScopes);
+    return { workspaceId: ws.id, agentId: agent.id, apiKey: key };
+  },
+}));
+```
+
 ## What the SDK handles for you
 
 - JWT signature verification via JWKS (cached, respects `kid`)
@@ -127,7 +182,8 @@ The agent follows the `discovery` URL, connects, gets credentials, and retries, 
 | Idempotency         | Idempotency-Key header; same inputs → cached result  |
 | Scope enforcement   | SDK rejects scopes not offered by tool (403)         |
 | Limit clamping      | SDK clamps limits to tool-defined maximum             |
-| Key security        | Tool API keys: only hash stored; plaintext returned once |
+| Key security (api_key) | Only hash stored; plaintext returned once         |
+| No shared secret (http_signature) | Agent signs requests with private key; tool verifies with public key via RFC 9421 |
 
 ## Errors
 

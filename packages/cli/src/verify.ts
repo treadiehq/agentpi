@@ -77,6 +77,12 @@ export async function verify(toolBaseUrl: string) {
     fail('plans', 'missing or empty');
   }
 
+  if (discovery.credential_types?.length > 0) {
+    pass('credential_types', discovery.credential_types.join(', '));
+  } else {
+    pass('credential_types', 'not specified (defaults to api_key)');
+  }
+
   if (discovery.idempotency?.header) pass('idempotency.header', discovery.idempotency.header);
   else fail('idempotency.header', 'missing');
 
@@ -144,6 +150,8 @@ export async function verify(toolBaseUrl: string) {
 
   if (connectResult.credentials?.type === 'api_key' && connectResult.credentials.api_key) {
     pass('credentials', `type=api_key prefix=${connectResult.credentials.api_key.slice(0, 16)}...`);
+  } else if (connectResult.credentials?.type === 'http_signature' && connectResult.credentials.key_id) {
+    pass('credentials', `type=http_signature key_id=${connectResult.credentials.key_id} alg=${connectResult.credentials.algorithm}`);
   } else {
     fail('credentials', 'missing or invalid type');
   }

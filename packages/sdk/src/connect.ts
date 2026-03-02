@@ -5,8 +5,9 @@ import {
   IdempotencyConflictError,
   HttpError,
   ConnectResult,
+  ConnectCredentials,
 } from '@agentpi/shared';
-import { ResolvedConfig } from './config';
+import { ResolvedConfig, ProvisionResult } from './config';
 import { verifyConnectGrant } from './verify';
 import { validateScopes, clampLimits } from './clamp';
 
@@ -30,6 +31,17 @@ function headerValue(
 
 function hashBody(body: unknown): string {
   return createHash('sha256').update(JSON.stringify(body ?? {})).digest('hex');
+}
+
+function toWireCredentials(result: ProvisionResult): ConnectCredentials {
+  if (result.type === 'http_signature') {
+    return {
+      type: 'http_signature',
+      key_id: result.keyId,
+      algorithm: result.algorithm || 'ed25519',
+    };
+  }
+  return { type: 'api_key', api_key: result.apiKey };
 }
 
 export function createConnectHandler(config: ResolvedConfig) {
@@ -103,7 +115,7 @@ export function createConnectHandler(config: ResolvedConfig) {
         status: 'active',
         tool_workspace_id: provisionResult.workspaceId,
         tool_agent_id: provisionResult.agentId,
-        credentials: { type: 'api_key', api_key: provisionResult.apiKey },
+        credentials: toWireCredentials(provisionResult),
         applied_plan_id: config.planId,
         applied_scopes: appliedScopes,
         applied_limits: appliedLimits,

@@ -99,7 +99,12 @@ export async function connect(opts: ConnectOptions) {
   console.log(`\n✅ Connected!`);
   console.log(`   Workspace: ${result.tool_workspace_id}`);
   console.log(`   Agent:     ${result.tool_agent_id}`);
-  console.log(`   API Key:   ${result.credentials.api_key}`);
+  if (result.credentials.type === 'http_signature') {
+    console.log(`   Auth:      HTTP Signature (${result.credentials.algorithm})`);
+    console.log(`   Key ID:    ${result.credentials.key_id}`);
+  } else {
+    console.log(`   API Key:   ${result.credentials.api_key}`);
+  }
   console.log(`   Scopes:    ${result.applied_scopes.join(', ')}`);
   console.log(`   Limits:    RPM=${result.applied_limits.rpm} Daily=${result.applied_limits.dailyQuota} Concurrency=${result.applied_limits.concurrency}`);
 
@@ -126,15 +131,24 @@ async function storeCredentials(
     }
   }
 
-  creds[toolBaseUrl] = {
+  const entry: Record<string, unknown> = {
     tool_workspace_id: result.tool_workspace_id,
     tool_agent_id: result.tool_agent_id,
-    api_key: result.credentials.api_key,
+    credential_type: result.credentials.type,
     applied_scopes: result.applied_scopes,
     applied_limits: result.applied_limits,
     last_grant: grant,
     connected_at: new Date().toISOString(),
   };
+
+  if (result.credentials.type === 'http_signature') {
+    entry.key_id = result.credentials.key_id;
+    entry.algorithm = result.credentials.algorithm;
+  } else {
+    entry.api_key = result.credentials.api_key;
+  }
+
+  creds[toolBaseUrl] = entry;
 
   await writeFile(credsPath, JSON.stringify(creds, null, 2));
   console.log(`\n💾 Credentials saved to ${credsPath}`);
