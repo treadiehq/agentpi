@@ -10,15 +10,16 @@ npm install @agentpi/sdk
 
 ## Quick start (with Prisma)
 
-If you use Prisma with the AgentPI schema (Workspace, ToolAgent, ToolApiKey models):
+If you use Prisma with the AgentPI schema (Workspace, ToolAgent models):
 
 ```typescript
-import { agentpi, prismaProvision } from '@agentpi/sdk';
+import { agentpi, prismaSignatureProvision } from '@agentpi/sdk';
 
 app.use(agentpi({
   tool: 'my_tool',
   scopes: ['read', 'write', 'deploy'],
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -29,7 +30,7 @@ That's it. The middleware auto-mounts two routes:
 
 ## Custom provision logic
 
-Use any database — just return `{ workspaceId, agentId, apiKey }`:
+Use any database — just return `{ workspaceId, agentId, type: 'http_signature', keyId }`:
 
 ```typescript
 app.use(agentpi({
@@ -38,8 +39,13 @@ app.use(agentpi({
   provision: async (ctx) => {
     const ws = await db.upsertWorkspace(ctx.orgId);
     const agent = await db.upsertAgent(ws.id, ctx.agentId);
-    const key = await db.issueApiKey(agent.id, ctx.requestedScopes);
-    return { workspaceId: ws.id, agentId: agent.id, apiKey: key };
+    return {
+      workspaceId: ws.id,
+      agentId: agent.id,
+      type: 'http_signature',
+      keyId: agent.keyId,
+      algorithm: 'ed25519',
+    };
   },
 }));
 ```
@@ -59,6 +65,7 @@ app.use(agentpi({
 |---|---|---|
 | `tool` | no | `TOOL_ID` env |
 | `scopes` | yes | — |
+| `credentialTypes` | no | `['http_signature']` |
 | `provision` | yes | — |
 | `baseUrl` | no | — (enables auto 401 prompt) |
 | `planId` | no | `'free'` |
@@ -77,7 +84,8 @@ With `TOOL_ID` set in env, the config reduces to:
 ```typescript
 app.use(agentpi({
   scopes: ['read', 'write', 'deploy'],
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -103,7 +111,9 @@ Return a `ProvisionResult`:
 interface ProvisionResult {
   workspaceId: string;
   agentId: string;
-  apiKey: string;
+  type: 'http_signature';
+  keyId: string;
+  algorithm?: string;
 }
 ```
 
@@ -121,7 +131,8 @@ app.use(agentpi({
   scopes: ['read', 'write', 'deploy'],
   jtiStore: new MyPrismaJtiStore(prisma),
   idempotencyStore: new MyPrismaIdempotencyStore(prisma),
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -134,7 +145,8 @@ app.use(agentpi({
   tool: 'my_tool',
   scopes: ['read', 'write'],
   baseUrl: 'https://api.example.com',
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 

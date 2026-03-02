@@ -38,11 +38,9 @@ export interface Claim {
 }
 
 /* ─── Credential types ─── */
-export type CredentialType = 'api_key' | 'http_signature';
+export type CredentialType = 'http_signature';
 
-export type ConnectCredentials =
-  | { type: 'api_key'; api_key: string }
-  | { type: 'http_signature'; key_id: string; algorithm: string };
+export type ConnectCredentials = { type: 'http_signature'; key_id: string; algorithm: string };
 
 /* ─── Discovery ─── */
 export interface PlanInfo {

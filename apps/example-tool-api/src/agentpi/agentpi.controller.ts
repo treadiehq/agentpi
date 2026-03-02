@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Req, Res, OnModuleInit } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { resolveConfig, createDiscoveryHandler, createConnectHandler, prismaProvision } from '@agentpi/sdk';
+import { resolveConfig, createDiscoveryHandler, createConnectHandler, prismaSignatureProvision } from '@agentpi/sdk';
 import { PrismaService } from '../prisma/prisma.service';
 import { PrismaJtiStore, PrismaIdempotencyStore } from './stores';
 
@@ -18,7 +18,8 @@ export class ConnectController implements OnModuleInit {
       limits: { rpm: 120, dailyQuota: 1000, concurrency: 5 },
       jtiStore: new PrismaJtiStore(this.prisma),
       idempotencyStore: new PrismaIdempotencyStore(this.prisma),
-      provision: prismaProvision(this.prisma),
+      credentialTypes: ['http_signature'],
+      provision: prismaSignatureProvision(this.prisma),
     });
 
     this.discoveryHandler = createDiscoveryHandler(resolved);

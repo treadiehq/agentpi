@@ -2,11 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Headers,
+  Req,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { FastifyRequest } from 'fastify';
+import vestauth from 'vestauth';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Controller()
@@ -19,58 +20,61 @@ export class ToolController {
   }
 
   @Post('deploy')
-  async deploy(@Headers('authorization') auth: string) {
-    if (!auth?.startsWith('Bearer ')) {
+  async deploy(@Req() req: FastifyRequest) {
+    const protocol =
+      (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim() ||
+      req.protocol ||
+      'http';
+    const host =
+      (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim() ||
+      req.headers.host;
+    if (!host) {
       throw new HttpException(
-        { error: { code: 'unauthorized', message: 'Missing Bearer token' } },
+        { error: { code: 'unauthorized', message: 'Missing host header' } },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const uri = `${protocol}://${host}${req.url}`;
+
+    let agentUid = '';
+    try {
+      const verified = await vestauth.provider.verify(
+        req.method,
+        uri,
+        req.headers as Record<string, string | string[] | undefined>,
+      );
+      agentUid = verified.uid || '';
+    } catch (error) {
+      throw new HttpException(
+        { error: { code: 'unauthorized', message: 'Invalid HTTP signature' } },
         HttpStatus.UNAUTHORIZED,
       );
     }
 
-    const apiKey = auth.slice(7);
-    const parts = apiKey.split('_');
-    if (parts.length < 4) {
+    if (!agentUid) {
       throw new HttpException(
-        { error: { code: 'unauthorized', message: 'Invalid API key format' } },
+        { error: { code: 'unauthorized', message: 'Missing agent identity' } },
         HttpStatus.UNAUTHORIZED,
       );
     }
 
-    const prefix = parts.slice(0, 3).join('_');
-    const secret = parts.slice(3).join('_');
-    const hashedSecret = createHash('sha256').update(secret).digest('hex');
-
-    const key = await this.prisma.toolApiKey.findFirst({
+    const agent = await this.prisma.toolAgent.findFirst({
       where: {
-        prefix,
-        hashedSecret,
-        revokedAt: null,
+        agentpiAgentId: agentUid,
+        status: 'active',
       },
     });
-
-    if (!key) {
+    if (!agent) {
       throw new HttpException(
-        { error: { code: 'unauthorized', message: 'Invalid API key' } },
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-
-    if (!key.scopes.includes('deploy')) {
-      throw new HttpException(
-        { error: { code: 'forbidden', message: 'Missing deploy scope' } },
+        { error: { code: 'forbidden', message: 'Agent is not provisioned for this tool' } },
         HttpStatus.FORBIDDEN,
       );
     }
 
-    await this.prisma.toolApiKey.update({
-      where: { id: key.id },
-      data: { lastUsedAt: new Date() },
-    });
-
     return {
       deployed: true,
       message: 'Deployment successful!',
-      workspace_id: key.workspaceId,
+      workspace_id: agent.workspaceId,
       timestamp: new Date().toISOString(),
     };
   }

@@ -22,15 +22,7 @@ export interface IdempotencyStore {
   set(key: string, orgId: string, toolId: string, entry: IdempotencyEntry): Promise<void>;
 }
 
-/* ─── Provision result (discriminated union) ─── */
-
-export interface ApiKeyProvisionResult {
-  workspaceId: string;
-  agentId: string;
-  type?: 'api_key';
-  apiKey: string;
-}
-
+/* ─── Provision result ─── */
 export interface HttpSignatureProvisionResult {
   workspaceId: string;
   agentId: string;
@@ -39,7 +31,7 @@ export interface HttpSignatureProvisionResult {
   algorithm?: string;
 }
 
-export type ProvisionResult = ApiKeyProvisionResult | HttpSignatureProvisionResult;
+export type ProvisionResult = HttpSignatureProvisionResult;
 
 /* ─── User-facing config ─── */
 
@@ -99,12 +91,21 @@ function resolveTool(tool?: string | { id: string; name?: string }): { id: strin
 
 export function resolveConfig(config: AgentPIConfig): ResolvedConfig {
   const tool = resolveTool(config.tool);
+  const credentialTypes = config.credentialTypes || ['http_signature'];
+  if (
+    credentialTypes.length !== 1 ||
+    credentialTypes[0] !== 'http_signature'
+  ) {
+    throw new Error(
+      'AgentPI: only "http_signature" credential type is supported.',
+    );
+  }
 
   return {
     toolId: tool.id,
     toolName: tool.name,
     connectEndpoint: '/v1/agentpi/connect',
-    credentialTypes: config.credentialTypes || ['api_key'],
+    credentialTypes,
     agentpiIssuer: config.issuer || process.env.AGENTPI_ISSUER || 'https://agentpi.local',
     jwksUrl:
       config.jwksUrl ||

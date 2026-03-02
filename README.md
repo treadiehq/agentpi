@@ -6,6 +6,8 @@ AgentPI is "Continue with Google" for AI agents. An agent connects to any tool t
 
 Agent connects → workspace created → API call works. No signup form, no email verification, no human.
 
+> AgentPI uses **Vestauth** for agent authentication to `POST /v1/connect-grants`.
+
 ## 1. Install
 
 ```bash
@@ -14,15 +16,16 @@ npm install @agentpi/sdk
 
 ## 2. Add the middleware
 
-If you use Prisma with the AgentPI schema (Workspace, ToolAgent, ToolApiKey models):
+If you use Prisma with the AgentPI schema (Workspace and ToolAgent models):
 
 ```typescript
-import { agentpi, prismaProvision } from '@agentpi/sdk';
+import { agentpi, prismaSignatureProvision } from '@agentpi/sdk';
 
 app.use(agentpi({
   tool: 'my_tool',
   scopes: ['read', 'write', 'deploy'],
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -35,8 +38,13 @@ app.use(agentpi({
   provision: async (ctx) => {
     const ws = await db.upsertWorkspace(ctx.orgId);
     const agent = await db.upsertAgent(ws.id, ctx.agentId);
-    const key = await db.issueApiKey(agent.id, ctx.requestedScopes);
-    return { workspaceId: ws.id, agentId: agent.id, apiKey: key };
+    return {
+      workspaceId: ws.id,
+      agentId: agent.id,
+      type: 'http_signature',
+      keyId: agent.keyId,
+      algorithm: 'ed25519',
+    };
   },
 }));
 ```
@@ -45,60 +53,24 @@ The SDK auto-mounts `GET /.well-known/agentpi.json` and `POST /v1/agentpi/connec
 
 `tool` can be a string (name is derived automatically) or `{ id: 'my_tool', name: 'My Tool' }`. Falls back to `TOOL_ID` env if omitted.
 
-## 3. Credential modes
+## 3. Credential mode
 
-AgentPI supports two credential modes. Tools can offer one or both.
+AgentPI uses [Vestauth](https://github.com/vestauth/vestauth) for post-connect tool credentials.
 
-### API key (default)
-
-The tool issues a traditional API key on connect. The agent uses `Authorization: Bearer <api_key>` on subsequent requests.
+No shared secret. The tool registers the agent's key ID on connect. The agent signs every subsequent request with its private key via Vestauth, and tools verify using the agent's public key.
 
 ```typescript
-app.use(agentpi({
-  tool: 'my_tool',
-  scopes: ['read', 'write'],
-  provision: prismaProvision(prisma),
-}));
-```
-
-### HTTP Signature (Vestauth / RFC 9421)
-
-No shared secret. The tool registers the agent's key ID on connect. The agent signs every subsequent request with its private key per [RFC 9421](https://datatracker.ietf.org/doc/rfc9421/) / [Web-Bot-Auth](https://datatracker.ietf.org/doc/html/draft-meunier-web-bot-auth-architecture). Tools verify using the agent's public key.
-
-```typescript
-import { agentpi, prismaHttpSignatureProvision } from '@agentpi/sdk';
+import { agentpi, prismaSignatureProvision } from '@agentpi/sdk';
 
 app.use(agentpi({
   tool: 'my_tool',
   scopes: ['read', 'write'],
   credentialTypes: ['http_signature'],
-  provision: prismaHttpSignatureProvision(prisma),
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
-The connect response returns `{ type: 'http_signature', key_id, algorithm }` instead of an API key. The agent then uses Vestauth (or any RFC 9421 signer) to authenticate subsequent requests.
-
-### Both modes
-
-Offer agents a choice by supporting both and letting your provision logic decide:
-
-```typescript
-app.use(agentpi({
-  tool: 'my_tool',
-  scopes: ['read', 'write'],
-  credentialTypes: ['api_key', 'http_signature'],
-  provision: async (ctx) => {
-    const ws = await db.upsertWorkspace(ctx.orgId);
-    const agent = await db.upsertAgent(ws.id, ctx.agentId);
-
-    if (agentPrefersSignatures(ctx)) {
-      return { workspaceId: ws.id, agentId: agent.id, type: 'http_signature', keyId: agent.keyId };
-    }
-    const key = await db.issueApiKey(agent.id, ctx.requestedScopes);
-    return { workspaceId: ws.id, agentId: agent.id, apiKey: key };
-  },
-}));
-```
+The connect response returns `{ type: 'http_signature', key_id, algorithm }`. The agent then uses Vestauth (or any RFC 9421 signer) to authenticate subsequent requests.
 
 ## What the SDK handles for you
 
@@ -121,7 +93,8 @@ app.use(agentpi({
   jtiStore: new PrismaJtiStore(prisma),
   idempotencyStore: new PrismaIdempotencyStore(prisma),
   limits: { rpm: 120, dailyQuota: 5000 },
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -136,7 +109,8 @@ app.use(agentpi({
   tool: 'tool_acme',
   scopes: ['read', 'write'],
   baseUrl: 'https://api.example.com',  // enables auto-prompt on 401s
-  provision: prismaProvision(prisma),
+  credentialTypes: ['http_signature'],
+  provision: prismaSignatureProvision(prisma),
 }));
 ```
 
@@ -153,9 +127,9 @@ The agent follows the `discovery` URL, connects, gets credentials, and retries, 
 **Single flow: CONNECT.** It acts as login if a mapping exists, signup if not.
 
 1. **Discover** — `GET <tool>/.well-known/agentpi.json` to learn tool capabilities
-2. **Grant** — `POST AgentPI /v1/connect-grants` to get a signed JWT (5 min TTL)
+2. **Grant** — `POST AgentPI /v1/connect-grants` with Vestauth HTTP Signature headers to get a signed JWT (5 min TTL)
 3. **Connect** — `POST <tool>/v1/agentpi/connect` with the grant JWT
-4. **Receive credentials** — tool provisions a workspace + API key, returned once
+4. **Receive credentials** — tool provisions a workspace and returns `{ type: 'http_signature', key_id, algorithm }`
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
@@ -169,7 +143,7 @@ The agent follows the `discovery` URL, connects, gets credentials, and retries, 
 │             │     └──────────────────┘     │  (verify JWT)    │
 │             │────────────────────────────> │                  │
 │             │  Bearer <connect_grant>      │  → provision     │
-│             │<────────────────────────────>│  → issue API key │
+│             │<────────────────────────────>│  → issue credentials │
 └─────────────┘     credentials returned     └──────────────────┘
 ```
 
@@ -178,11 +152,11 @@ The agent follows the `discovery` URL, connects, gets credentials, and retries, 
 | Protection          | Mechanism                                            |
 |---------------------|------------------------------------------------------|
 | Grant authenticity  | RS256 JWT signed by AgentPI, verified via JWKS       |
+| Agent authentication | Vestauth HTTP Message Signatures verified on `/v1/connect-grants` |
 | Replay prevention   | JTI tracked; each grant usable exactly once          |
 | Idempotency         | Idempotency-Key header; same inputs → cached result  |
 | Scope enforcement   | SDK rejects scopes not offered by tool (403)         |
 | Limit clamping      | SDK clamps limits to tool-defined maximum             |
-| Key security (api_key) | Only hash stored; plaintext returned once         |
 | No shared secret (http_signature) | Agent signs requests with private key; tool verifies with public key via RFC 9421 |
 
 ## Errors
@@ -205,10 +179,13 @@ All errors return:
 ```bash
 # Prerequisites: Node 20+, pnpm, Docker
 pnpm install && pnpm dev
+vestauth agent init   # create AGENT_UID + AGENT_PRIVATE_JWK in .env
 ```
 
+`vestauth agent init` is required for grant requests (`/v1/connect-grants`) because AgentPI service verifies HTTP signatures.
+
 ```bash
-pnpm demo    # connect → provision → API call
+pnpm demo    # connect → provision → outputs key_id/algorithm for signed calls
 pnpm verify  # 17-point conformance check
 ```
 
@@ -220,7 +197,10 @@ See `.env.example` for all configuration:
 |------------------------|----------------------------|--------------------------------------|
 | `AGENTPI_PORT`         | `4010`                     | AgentPI service port                 |
 | `AGENTPI_ISSUER`       | `https://agentpi.local`    | JWT issuer claim                     |
-| `AGENTPI_AGENT_API_KEY`| `agentpi_dev_key_12345`    | Agent credential for requesting grants|
+| `AGENTPI_KEYS_DIR`     | `.keys`                    | Service signing key directory        |
+| `AGENTPI_SERVICE_URL`  | `http://localhost:4010`    | CLI URL for requesting grants        |
+| `AGENT_UID`            | `agent-...`                | Agent identifier used to sign grant requests |
+| `AGENT_PRIVATE_JWK`    | _none_                     | Ed25519 private JWK used by Vestauth to sign grant requests |
 | `TOOL_ID`              | `tool_example`             | Tool identifier (service + SDK)      |
 | `TOOL_PORT`            | `4020`                     | Example tool port                    |
 | `DATABASE_URL`         | `postgresql://...`         | Postgres connection string           |

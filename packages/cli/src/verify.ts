@@ -3,12 +3,11 @@ import {
   DiscoveryDocument,
   ConnectGrantResponse,
   ConnectResult,
-  AGENT_KEY_HEADER,
   AGENTPI_VERSION,
 } from '@agentpi/shared';
+import vestauth from 'vestauth';
 
 const AGENTPI_URL = process.env.AGENTPI_SERVICE_URL || 'http://localhost:4010';
-const AGENT_KEY = process.env.AGENTPI_AGENT_API_KEY || 'agentpi_dev_key_12345';
 
 interface Check {
   name: string;
@@ -26,6 +25,18 @@ function pass(name: string, detail?: string) {
 function fail(name: string, detail: string) {
   checks.push({ name, pass: false, detail });
   console.log(`  ❌ ${name} — ${detail}`);
+}
+
+async function signedHeaders(method: string, url: string) {
+  try {
+    return await vestauth.agent.headers(method, url);
+  } catch (error) {
+    throw new Error(
+      `Failed to sign request with Vestauth. Run "vestauth agent init" first. ${
+        error instanceof Error ? error.message : ''
+      }`.trim(),
+    );
+  }
 }
 
 export async function verify(toolBaseUrl: string) {
@@ -80,7 +91,7 @@ export async function verify(toolBaseUrl: string) {
   if (discovery.credential_types?.length > 0) {
     pass('credential_types', discovery.credential_types.join(', '));
   } else {
-    pass('credential_types', 'not specified (defaults to api_key)');
+    pass('credential_types', 'not specified (defaults to http_signature)');
   }
 
   if (discovery.idempotency?.header) pass('idempotency.header', discovery.idempotency.header);
@@ -90,11 +101,13 @@ export async function verify(toolBaseUrl: string) {
   console.log('\n── Connect flow ──');
   let grant: string;
   try {
-    const grantRes = await fetch(`${AGENTPI_URL}/v1/connect-grants`, {
+    const grantUrl = `${AGENTPI_URL}/v1/connect-grants`;
+    const authHeaders = await signedHeaders('POST', grantUrl);
+    const grantRes = await fetch(grantUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        [AGENT_KEY_HEADER]: AGENT_KEY,
+        ...authHeaders,
       },
       body: JSON.stringify({
         tool_id: discovery.tool_id,
@@ -148,9 +161,7 @@ export async function verify(toolBaseUrl: string) {
   if (connectResult.tool_agent_id) pass('tool_agent_id', connectResult.tool_agent_id);
   else fail('tool_agent_id', 'missing');
 
-  if (connectResult.credentials?.type === 'api_key' && connectResult.credentials.api_key) {
-    pass('credentials', `type=api_key prefix=${connectResult.credentials.api_key.slice(0, 16)}...`);
-  } else if (connectResult.credentials?.type === 'http_signature' && connectResult.credentials.key_id) {
+  if (connectResult.credentials?.type === 'http_signature' && connectResult.credentials.key_id) {
     pass('credentials', `type=http_signature key_id=${connectResult.credentials.key_id} alg=${connectResult.credentials.algorithm}`);
   } else {
     fail('credentials', 'missing or invalid type');
@@ -186,11 +197,13 @@ export async function verify(toolBaseUrl: string) {
   // 7. Idempotency conflict
   console.log('\n── Idempotency ──');
   try {
-    const grant2Res = await fetch(`${AGENTPI_URL}/v1/connect-grants`, {
+    const grantUrl = `${AGENTPI_URL}/v1/connect-grants`;
+    const authHeaders = await signedHeaders('POST', grantUrl);
+    const grant2Res = await fetch(grantUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        [AGENT_KEY_HEADER]: AGENT_KEY,
+        ...authHeaders,
       },
       body: JSON.stringify({
         tool_id: discovery.tool_id,

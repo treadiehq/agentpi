@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { KeysService } from '../keys/keys.service';
 import { v4 as uuid } from 'uuid';
+import vestauth from 'vestauth';
 import {
   ConnectGrantRequest,
   ConnectGrantResponse,
@@ -11,18 +12,29 @@ import {
 @Injectable()
 export class GrantsService {
   private readonly issuer = process.env.AGENTPI_ISSUER || 'https://agentpi.local';
-  private readonly agentApiKey = process.env.AGENTPI_AGENT_API_KEY || '';
   private readonly toolId = process.env.TOOL_ID || 'tool_example';
 
   constructor(private readonly keys: KeysService) {}
 
-  validateAgentKey(key: string | undefined) {
-    if (!key || key !== this.agentApiKey) {
-      throw new UnauthorizedException('Invalid agent API key');
+  async verifyAgentSignature(
+    method: string,
+    uri: string,
+    headers: Record<string, string | string[] | undefined>,
+  ): Promise<string> {
+    try {
+      const result = await vestauth.provider.verify(method, uri, headers);
+      if (!result?.uid) {
+        throw new UnauthorizedException('Signature verified but agent uid is missing');
+      }
+      return result.uid;
+    } catch (error) {
+      throw new UnauthorizedException(
+        `Invalid agent signature: ${error instanceof Error ? error.message : 'verification failed'}`,
+      );
     }
   }
 
-  async issueGrant(body: ConnectGrantRequest): Promise<ConnectGrantResponse> {
+  async issueGrant(body: ConnectGrantRequest, agentUid: string): Promise<ConnectGrantResponse> {
     if (body.tool_id !== this.toolId) {
       throw new ForbiddenException(`Unknown tool_id: ${body.tool_id}`);
     }
@@ -55,7 +67,7 @@ export class GrantsService {
       {
         iss: this.issuer,
         aud: body.tool_id,
-        sub: 'agent_demo',
+        sub: agentUid,
         jti,
         agentpi,
       },

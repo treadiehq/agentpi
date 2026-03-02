@@ -25,7 +25,7 @@ Credentials are saved to `~/.agentpi/credentials.json`, keyed by tool base URL.
 
 ### `demo`
 
-Runs the full flow end-to-end: connect, then call the tool's `/deploy` endpoint with the returned API key.
+Runs the full flow end-to-end: connect, then call the tool's `/deploy` endpoint when API key credentials are returned.
 
 ```bash
 agentpi demo <toolBaseUrl>
@@ -33,7 +33,7 @@ agentpi demo <toolBaseUrl>
 
 ### `verify`
 
-Runs 17 conformance checks against a tool: discovery document structure, connect flow, response shape, replay protection, and idempotency conflict handling.
+Runs conformance checks against a tool: discovery document structure, connect flow, response shape, replay protection, and idempotency conflict handling.
 
 ```bash
 agentpi verify <toolBaseUrl>
@@ -54,7 +54,14 @@ pnpm tsx packages/cli/src/cli.ts verify http://localhost:4020
 
 ## Environment variables
 
+Initialize your agent identity first:
+
+```bash
+vestauth agent init
+```
+
 | Variable | Default | Description |
 |---|---|---|
-| `AGENTPI_URL` | `http://localhost:4010` | AgentPI service URL |
-| `AGENTPI_AGENT_API_KEY` | `agentpi_dev_key_12345` | Agent credential for requesting grants |
+| `AGENTPI_SERVICE_URL` | `http://localhost:4010` | AgentPI service URL |
+| `AGENT_UID` | `agent-...` | Agent identity used by Vestauth for signing |
+| `AGENT_PRIVATE_JWK` | _none_ | Ed25519 private JWK used by Vestauth to sign grant requests |

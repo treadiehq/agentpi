@@ -1,19 +1,6 @@
-import { randomBytes, createHash } from 'crypto';
 import { ProvisionContext } from '@agentpi/shared';
 import { ProvisionResult } from '@agentpi/sdk';
 import { PrismaService } from '../prisma/prisma.service';
-
-function generateApiKey(): { full: string; prefix: string; secret: string } {
-  const prefixBytes = randomBytes(4).toString('hex');
-  const secretBytes = randomBytes(24).toString('base64url');
-  const prefix = `tk_live_${prefixBytes}`;
-  const full = `${prefix}_${secretBytes}`;
-  return { full, prefix, secret: secretBytes };
-}
-
-function hashSecret(secret: string): string {
-  return createHash('sha256').update(secret).digest('hex');
-}
 
 export function createProvisionFn(prisma: PrismaService) {
   return async (ctx: ProvisionContext): Promise<ProvisionResult> => {
@@ -33,23 +20,14 @@ export function createProvisionFn(prisma: PrismaService) {
       create: { workspaceId: workspace.id, agentpiAgentId: ctx.agentId, status: 'active' },
       update: { status: 'active' },
     });
-
-    const { full, prefix, secret } = generateApiKey();
-
-    await prisma.toolApiKey.create({
-      data: {
-        workspaceId: workspace.id,
-        toolAgentId: agent.id,
-        hashedSecret: hashSecret(secret),
-        prefix,
-        scopes: ctx.requestedScopes,
-      },
-    });
+    const keyId = `${ctx.agentId}@${workspace.id}`;
 
     return {
       workspaceId: workspace.id,
       agentId: agent.id,
-      apiKey: full,
+      type: 'http_signature',
+      keyId,
+      algorithm: 'ed25519',
     };
   };
 }

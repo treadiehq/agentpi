@@ -7,8 +7,8 @@ import {
   DiscoveryDocument,
   ConnectGrantResponse,
   ConnectResult,
-  AGENT_KEY_HEADER,
 } from '@agentpi/shared';
+import vestauth from 'vestauth';
 
 interface ConnectOptions {
   toolBaseUrl: string;
@@ -21,7 +21,18 @@ interface ConnectOptions {
 }
 
 const AGENTPI_URL = process.env.AGENTPI_SERVICE_URL || 'http://localhost:4010';
-const AGENT_KEY = process.env.AGENTPI_AGENT_API_KEY || 'agentpi_dev_key_12345';
+
+async function signedHeaders(method: string, url: string) {
+  try {
+    return await vestauth.agent.headers(method, url);
+  } catch (error) {
+    throw new Error(
+      `Failed to sign request with Vestauth. Run "vestauth agent init" first. ${
+        error instanceof Error ? error.message : ''
+      }`.trim(),
+    );
+  }
+}
 
 export async function connect(opts: ConnectOptions) {
   console.log(`\n🔍 Discovering tool at ${opts.toolBaseUrl}...`);
@@ -44,11 +55,13 @@ export async function connect(opts: ConnectOptions) {
     connectGrant = opts.reuseGrant;
   } else {
     console.log(`\n🔑 Requesting connect grant from AgentPI...`);
-    const grantRes = await fetch(`${AGENTPI_URL}/v1/connect-grants`, {
+    const grantUrl = `${AGENTPI_URL}/v1/connect-grants`;
+    const authHeaders = await signedHeaders('POST', grantUrl);
+    const grantRes = await fetch(grantUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        [AGENT_KEY_HEADER]: AGENT_KEY,
+        ...authHeaders,
       },
       body: JSON.stringify({
         tool_id: discovery.tool_id,
@@ -99,12 +112,8 @@ export async function connect(opts: ConnectOptions) {
   console.log(`\n✅ Connected!`);
   console.log(`   Workspace: ${result.tool_workspace_id}`);
   console.log(`   Agent:     ${result.tool_agent_id}`);
-  if (result.credentials.type === 'http_signature') {
-    console.log(`   Auth:      HTTP Signature (${result.credentials.algorithm})`);
-    console.log(`   Key ID:    ${result.credentials.key_id}`);
-  } else {
-    console.log(`   API Key:   ${result.credentials.api_key}`);
-  }
+  console.log(`   Auth:      HTTP Signature (${result.credentials.algorithm})`);
+  console.log(`   Key ID:    ${result.credentials.key_id}`);
   console.log(`   Scopes:    ${result.applied_scopes.join(', ')}`);
   console.log(`   Limits:    RPM=${result.applied_limits.rpm} Daily=${result.applied_limits.dailyQuota} Concurrency=${result.applied_limits.concurrency}`);
 
@@ -140,13 +149,8 @@ async function storeCredentials(
     last_grant: grant,
     connected_at: new Date().toISOString(),
   };
-
-  if (result.credentials.type === 'http_signature') {
-    entry.key_id = result.credentials.key_id;
-    entry.algorithm = result.credentials.algorithm;
-  } else {
-    entry.api_key = result.credentials.api_key;
-  }
+  entry.key_id = result.credentials.key_id;
+  entry.algorithm = result.credentials.algorithm;
 
   creds[toolBaseUrl] = entry;
 

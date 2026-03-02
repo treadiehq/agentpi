@@ -10,12 +10,13 @@
   },
   "dependencies": {
     "@agentpi/shared": "workspace:*",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "vestauth": "^0.21.1"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
     "@types/node": "^22.0.0",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.0.0"
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
   }
 }
