@@ -6,7 +6,7 @@ AgentPI is "Continue with Google" for AI agents. An agent connects to any tool t
 
 Agent connects → workspace created → API call works. No signup form, no email verification, no human.
 
-> AgentPI uses **Vestauth** for agent authentication to `POST /v1/connect-grants`.
+> AgentPI uses **[Vestauth](https://github.com/vestauth/vestauth)** for agent authentication to `POST /v1/connect-grants`.
 
 ## 1. Install
 

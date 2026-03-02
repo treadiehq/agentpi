@@ -48,8 +48,8 @@ importers:
         specifier: ^11.0.0
         version: 11.1.0
       vestauth:
-        specifier: ^0.21.1
-        version: 0.21.1
+        specifier: ^0.22.0
+        version: 0.22.0
     devDependencies:
       '@nestjs/cli':
         specifier: ^11.0.0
@@ -106,8 +106,8 @@ importers:
         specifier: ^11.0.0
         version: 11.1.0
       vestauth:
-        specifier: ^0.21.1
-        version: 0.21.1
+        specifier: ^0.22.0
+        version: 0.22.0
     devDependencies:
       '@nestjs/cli':
         specifier: ^11.0.0
@@ -140,8 +140,8 @@ importers:
         specifier: ^11.0.0
         version: 11.1.0
       vestauth:
-        specifier: ^0.21.1
-        version: 0.21.1
+        specifier: ^0.22.0
+        version: 0.22.0
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -2954,8 +2954,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vestauth@0.21.1:
-    resolution: {integrity: sha512-xOdm0MDYMxUz85QWGab7MaE31n195eUaQA9HVtQ9B7uTYnyu68bmxleYckH3E0jwBwUJARvPbruBwGHYKHkECw==}
+  vestauth@0.22.0:
+    resolution: {integrity: sha512-Z+8FF02rd1YrTz7Fiovb6oLDr+uT9x/ghSgkWtO6ko6HiAClYHRN0VDNF4ixHhqAS/HXySS3031gQJxF51RNJA==}
     hasBin: true
 
   walker@1.0.8:
@@ -6070,7 +6070,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vestauth@0.21.1:
+  vestauth@0.22.0:
     dependencies:
       '@dotenvx/dotenvx': 1.52.0
       commander: 11.1.0
