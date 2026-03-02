@@ -70,7 +70,7 @@ app.use(agentpi({
 }));
 ```
 
-The connect response returns `{ type: 'http_signature', key_id, algorithm }`. The agent then uses Vestauth (or any RFC 9421 signer) to authenticate subsequent requests.
+The connect response returns `{ type: 'http_signature', key_id, algorithm }`. The agent then uses Vestauth (RFC 9421 signer) to authenticate subsequent requests.
 
 ## What the SDK handles for you
 
