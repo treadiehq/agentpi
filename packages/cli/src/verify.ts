@@ -30,12 +30,21 @@ function fail(name: string, detail: string) {
 async function signedHeaders(method: string, url: string) {
   try {
     return await vestauth.agent.headers(method, url);
-  } catch (error) {
-    throw new Error(
-      `Failed to sign request with Vestauth. Run "vestauth agent init" first. ${
-        error instanceof Error ? error.message : ''
-      }`.trim(),
-    );
+  } catch (_error) {
+    // First-run convenience: auto-initialize identity, then retry signing once.
+    try {
+      const init = await vestauth.agent.init();
+      if (init.isNew) {
+        console.log(`  Initialized agent identity (${init.AGENT_UID})`);
+      }
+      return await vestauth.agent.headers(method, url);
+    } catch (error) {
+      throw new Error(
+        `Failed to sign request with Vestauth. ${
+          error instanceof Error ? error.message : ''
+        }`.trim(),
+      );
+    }
   }
 }
 
