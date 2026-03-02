@@ -179,14 +179,32 @@ All errors return:
 ```bash
 # Prerequisites: Node 20+, pnpm, Docker
 pnpm install && pnpm dev
-vestauth agent init   # create AGENT_UID + AGENT_PRIVATE_JWK in .env
 ```
 
-`vestauth agent init` is required for grant requests (`/v1/connect-grants`) because AgentPI service verifies HTTP signatures.
+For local dev, you can either:
+
+- Let the CLI auto-initialize identity on first `connect` / `verify` run, or
+- Run `vestauth agent init` yourself to create `AGENT_UID` + `AGENT_PRIVATE_JWK` up front.
 
 ```bash
 pnpm demo    # connect → provision → outputs key_id/algorithm for signed calls
 pnpm verify  # 17-point conformance check
+```
+
+### Using the published CLI
+
+Install globally:
+
+```bash
+npm i -g @agentpi/cli
+```
+
+Or run without installing:
+
+```bash
+npx @agentpi/cli connect http://localhost:4020
+npx @agentpi/cli verify http://localhost:4020
+npx @agentpi/cli demo http://localhost:4020
 ```
 
 ### Environment variables
