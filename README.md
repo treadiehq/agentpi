@@ -153,6 +153,10 @@ The agent follows the `discovery` URL, connects, gets credentials, and retries, 
 |---------------------|------------------------------------------------------|
 | Grant authenticity  | RS256 JWT signed by AgentPI, verified via JWKS       |
 | Agent authentication | Vestauth HTTP Message Signatures verified on `/v1/connect-grants` |
+| Low default limits   | Service enforces default read-only scopes and conservative limits for new agents |
+| Rate limiting / quota| Per-agent in-memory minute + daily counters enforced on grant requests |
+| Fast revoke path     | Admin block/unblock endpoints and startup blocklist support |
+| Audit logging        | Structured JSON logs for grant issued/rejected and block events |
 | Replay prevention   | JTI tracked; each grant usable exactly once          |
 | Idempotency         | Idempotency-Key header; same inputs → cached result  |
 | Scope enforcement   | SDK rejects scopes not offered by tool (403)         |
@@ -216,12 +220,31 @@ See `.env.example` for all configuration:
 | `AGENTPI_PORT`         | `4010`                     | AgentPI service port                 |
 | `AGENTPI_ISSUER`       | `https://agentpi.local`    | JWT issuer claim                     |
 | `AGENTPI_KEYS_DIR`     | `.keys`                    | Service signing key directory        |
+| `AGENTPI_DEFAULT_SCOPES` | `read`                   | Default allowed scopes for unknown/new agents |
+| `AGENTPI_DEFAULT_RPM`  | `10`                       | Per-agent grant requests per minute |
+| `AGENTPI_DEFAULT_DAILY_QUOTA` | `100`              | Per-agent grant requests per day |
+| `AGENTPI_DEFAULT_CONCURRENCY` | `1`                | Default max concurrency limit claim for new agents |
+| `AGENTPI_BLOCKED_AGENTS` | _empty_                 | Comma-separated blocked agent UIDs |
+| `AGENTPI_ADMIN_KEY`    | _empty_                    | Enables admin block/unblock endpoints when set |
+| `AGENTPI_AGENT_POLICIES` | _empty_                 | JSON map for per-agent scopes/limits overrides |
+| `AGENTPI_TOOL_POLICIES` | _empty_                  | JSON map for per-tool (customer) scopes/limits overrides |
 | `AGENTPI_SERVICE_URL`  | `http://localhost:4010`    | CLI URL for requesting grants        |
 | `AGENT_UID`            | `agent-...`                | Agent identifier used to sign grant requests |
 | `AGENT_PRIVATE_JWK`    | _none_                     | Ed25519 private JWK used by Vestauth to sign grant requests |
 | `TOOL_ID`              | `tool_example`             | Tool identifier (service + SDK)      |
 | `TOOL_PORT`            | `4020`                     | Example tool port                    |
 | `DATABASE_URL`         | `postgresql://...`         | Postgres connection string           |
+
+Fast revoke endpoints (require `x-agentpi-admin-key: <AGENTPI_ADMIN_KEY>`):
+
+- `POST /v1/agents/:agentUid/block`
+- `POST /v1/agents/:agentUid/unblock`
+
+Policy precedence on grant issuance:
+
+1. `AGENTPI_AGENT_POLICIES[agentUid]` (if present)
+2. `AGENTPI_TOOL_POLICIES[tool_id]` (if present)
+3. global defaults (`AGENTPI_DEFAULT_*`)
 
 ## License
 
