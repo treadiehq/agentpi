@@ -16,8 +16,8 @@ interface PrismaHttpSignatureLike {
   toolAgent: {
     upsert(args: {
       where: { workspaceId_agentpiAgentId: { workspaceId: string; agentpiAgentId: string } };
-      create: { workspaceId: string; agentpiAgentId: string; status: string; authMode?: string; keyId?: string };
-      update: { status: string; authMode?: string; keyId?: string };
+      create: { workspaceId: string; agentpiAgentId: string; status: string; scopes: string[] };
+      update: { status: string; scopes: string[] };
     }): Promise<{ id: string }>;
   };
 }
@@ -43,13 +43,11 @@ export function prismaHttpSignatureProvision(prisma: PrismaHttpSignatureLike) {
         workspaceId: workspace.id,
         agentpiAgentId: ctx.agentId,
         status: 'active',
-        authMode: 'http_signature',
-        keyId,
+        scopes: ctx.requestedScopes,
       },
       update: {
         status: 'active',
-        authMode: 'http_signature',
-        keyId,
+        scopes: ctx.requestedScopes,
       },
     });
 

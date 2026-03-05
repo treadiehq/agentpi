@@ -45,7 +45,8 @@ export type ConnectCredentials = { type: 'http_signature'; key_id: string; algor
 /* ─── Discovery ─── */
 export interface PlanInfo {
   plan_id: string;
-  max_limits: Limits;
+  /** Omitted from public discovery to avoid exposing exact rate-limit caps. */
+  max_limits: Limits | null;
   scopes_allowed: string[];
 }
 
@@ -57,7 +58,8 @@ export interface DiscoveryDocument {
   credential_types: CredentialType[];
   plans: PlanInfo[];
   default_plan_id: string;
-  default_limits: Limits;
+  /** Omitted from public discovery to avoid exposing exact rate-limit caps. */
+  default_limits: Limits | null;
   idempotency: { header: string; ttl_seconds: number };
 }
 

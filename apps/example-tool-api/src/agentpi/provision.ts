@@ -17,8 +17,13 @@ export function createProvisionFn(prisma: PrismaService) {
           agentpiAgentId: ctx.agentId,
         },
       },
-      create: { workspaceId: workspace.id, agentpiAgentId: ctx.agentId, status: 'active' },
-      update: { status: 'active' },
+      create: {
+        workspaceId: workspace.id,
+        agentpiAgentId: ctx.agentId,
+        status: 'active',
+        scopes: ctx.requestedScopes,
+      },
+      update: { status: 'active', scopes: ctx.requestedScopes },
     });
     const keyId = `${ctx.agentId}@${workspace.id}`;
 

@@ -10,38 +10,28 @@ generator client {
 model Workspace {
   id        String      @id @default(uuid())
   orgId     String      @unique
-  name      String
+  name      String      @db.VarChar(255)
   planId    String      @default("free")
   createdAt DateTime    @default(now())
   agents    ToolAgent[]
-  apiKeys   ToolApiKey[]
 }
 
 model ToolAgent {
-  id             String      @id @default(uuid())
+  id             String    @id @default(uuid())
   workspaceId    String
   agentpiAgentId String
-  status         String      @default("active")
-  createdAt      DateTime    @default(now())
-  workspace      Workspace   @relation(fields: [workspaceId], references: [id])
-  apiKeys        ToolApiKey[]
+  status         String    @default("active")
+  scopes         String[]  @default([])
+  createdAt      DateTime  @default(now())
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
 
   @@unique([workspaceId, agentpiAgentId])
 }
 
-model ToolApiKey {
-  id           String    @id @default(uuid())
-  workspaceId  String
-  toolAgentId  String
-  hashedSecret String
-  prefix       String
-  scopes       String[]
-  createdAt    DateTime  @default(now())
-  revokedAt    DateTime?
-  lastUsedAt   DateTime?
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
-  toolAgent    ToolAgent @relation(fields: [toolAgentId], references: [id])
-}
+// NOTE: A ToolApiKey model with a hashedSecret column was previously defined
+// here but had no hashing/validation implementation, making it a ghost schema.
+// It has been removed until the API key issuance and verification flow is fully
+// implemented (hash with argon2/bcrypt, compare with timingSafeEqual).
 
 model Idempotency {
   id           String   @id @default(uuid())

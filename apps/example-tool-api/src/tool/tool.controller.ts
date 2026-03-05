@@ -71,6 +71,15 @@ export class ToolController {
       );
     }
 
+    // Verify the agent holds the 'deploy' scope. An agent provisioned with only
+    // 'read' should not be able to trigger deployments.
+    if (!agent.scopes.includes('deploy')) {
+      throw new HttpException(
+        { error: { code: 'forbidden', message: 'Agent does not have the deploy scope' } },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     return {
       deployed: true,
       message: 'Deployment successful!',

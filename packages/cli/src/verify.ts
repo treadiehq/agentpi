@@ -88,10 +88,13 @@ export async function verify(toolBaseUrl: string) {
   if (discovery.plans?.length > 0) {
     pass('plans', `${discovery.plans.length} plan(s): ${discovery.plans.map(p => p.plan_id).join(', ')}`);
     const plan = discovery.plans[0];
-    if (plan.max_limits && plan.scopes_allowed?.length > 0) {
-      pass('plan[0] structure', `scopes=[${plan.scopes_allowed.join(',')}] rpm=${plan.max_limits.rpm}`);
+    if (plan.scopes_allowed?.length > 0) {
+      // max_limits may be null — it is intentionally omitted from public discovery
+      // to avoid exposing exact rate-limit caps that could aid DoS tuning.
+      const limitsNote = plan.max_limits ? ` rpm=${plan.max_limits.rpm}` : ' (limits omitted)';
+      pass('plan[0] structure', `scopes=[${plan.scopes_allowed.join(',')}]${limitsNote}`);
     } else {
-      fail('plan[0] structure', 'missing max_limits or scopes_allowed');
+      fail('plan[0] structure', 'missing scopes_allowed');
     }
   } else {
     fail('plans', 'missing or empty');

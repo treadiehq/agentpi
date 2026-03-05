@@ -101,16 +101,30 @@ export function resolveConfig(config: AgentPIConfig): ResolvedConfig {
     );
   }
 
+  const jwksUrl =
+    config.jwksUrl ||
+    process.env.AGENTPI_JWKS_URL ||
+    // Default to HTTPS so that accidental production deployments without an
+    // explicit JWKS URL setting don't silently fall back to plaintext HTTP,
+    // which would allow a MITM to substitute a forged JWKS.
+    'https://agentpi.local/.well-known/jwks.json';
+
+  // Warn loudly in production if JWKS is fetched over plaintext HTTP — a MITM
+  // could inject a forged key set and sign arbitrary grants.
+  if (jwksUrl.startsWith('http:') && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      `AgentPI: AGENTPI_JWKS_URL must use HTTPS in production (got: ${jwksUrl}). ` +
+        'Set NODE_ENV=development to suppress this check for local testing.',
+    );
+  }
+
   return {
     toolId: tool.id,
     toolName: tool.name,
     connectEndpoint: '/v1/agentpi/connect',
     credentialTypes,
     agentpiIssuer: config.issuer || process.env.AGENTPI_ISSUER || 'https://agentpi.local',
-    jwksUrl:
-      config.jwksUrl ||
-      process.env.AGENTPI_JWKS_URL ||
-      'http://localhost:4010/.well-known/jwks.json',
+    jwksUrl,
     idempotencyHeader: IDEMPOTENCY_HEADER,
     idempotencyTtlSeconds: IDEMPOTENCY_TTL_SECONDS,
     planId: config.planId || 'free',

@@ -59,7 +59,9 @@ export class KeysService implements OnModuleInit {
 
       const privTmpPath = `${privPath}.tmp`;
       const pubTmpPath = `${pubPath}.tmp`;
-      await writeFile(privTmpPath, JSON.stringify(privJwk, null, 2));
+      // Write the private key with mode 0o600 (owner read/write only) so that
+      // other OS users on the host cannot read the signing key material.
+      await writeFile(privTmpPath, JSON.stringify(privJwk, null, 2), { mode: 0o600 });
       await writeFile(pubTmpPath, JSON.stringify(pubJwk, null, 2));
       await rename(privTmpPath, privPath);
       await rename(pubTmpPath, pubPath);

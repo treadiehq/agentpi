@@ -49,6 +49,10 @@ export function createConnectHandler(config: ResolvedConfig) {
           `Header ${config.idempotencyHeader} is required`,
         );
       }
+      // Enforce a reasonable length cap to prevent unbounded DB/memory usage.
+      if (idempotencyKey.length > 255) {
+        throw new HttpError(400, 'invalid_idempotency_key', 'idempotency-key must be at most 255 characters');
+      }
 
       const grant = await verifyConnectGrant(
         token,
@@ -67,6 +71,30 @@ export function createConnectHandler(config: ResolvedConfig) {
         nonce: claim.nonce,
       });
 
+      // Reserve the JTI *first* (atomic DB unique-constraint insert) before any
+      // idempotency lookup.  This makes the JTI the authoritative replay guard and
+      // eliminates the TOCTOU window where two concurrent requests could both pass
+      // the idempotency check before either writes a JTI record.
+      try {
+        await config.jtiStore.add(grant.jti, new Date(grant.exp * 1000));
+      } catch {
+        // If the JTI is already recorded, check if this is a valid idempotent
+        // re-delivery of the same request (same idempotency key + same body hash).
+        const existing = await config.idempotencyStore.get(
+          idempotencyKey,
+          claim.org_id,
+          config.toolId,
+        );
+        if (existing && existing.requestHash === requestHash) {
+          res.status(200).send(JSON.parse(existing.responseJson));
+          return;
+        }
+        throw new ReplayError();
+      }
+
+      // JTI reserved successfully — check idempotency for a cached response to
+      // return without re-running provisioning (handles client retries with the
+      // same idempotency key after a network failure).
       const existing = await config.idempotencyStore.get(
         idempotencyKey,
         claim.org_id,
@@ -78,12 +106,6 @@ export function createConnectHandler(config: ResolvedConfig) {
         }
         res.status(200).send(JSON.parse(existing.responseJson));
         return;
-      }
-
-      try {
-        await config.jtiStore.add(grant.jti, new Date(grant.exp * 1000));
-      } catch {
-        throw new ReplayError();
       }
 
       const appliedScopes = validateScopes(claim.scopes, config.maxScopes);
