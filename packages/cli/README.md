@@ -12,6 +12,51 @@ npm i -g @agentpi/cli
 
 ## Commands
 
+### `audit`
+
+Scans a local TypeScript/JavaScript codebase for exported functions that agents could call, and classifies each one by risk level. Works on any codebase — no AgentPI installation required.
+
+```bash
+agentpi audit              # scan current directory
+agentpi audit ./src        # scan a specific path
+agentpi audit --json       # machine-readable JSON output (for CI)
+agentpi audit --path ./src # explicit path flag
+```
+
+Example output:
+
+```
+AgentPI — Audit Report
+──────────────────────────────────────────────────────
+Path: ./src    Files scanned: 42
+
+  🔴 DESTRUCTIVE    1     🟠 NEEDS APPROVAL   2
+  🟡 REVIEW         3     🟢 SAFE             5
+
+High risk — Destructive
+  1. deleteUser()
+     🔴  DESTRUCTIVE    src/actions/users.ts:48
+     · function name contains destructive keyword: delete
+     · database delete mutation detected
+
+High risk — Needs Approval
+  2. refundPayment()
+     🟠  NEEDS APPROVAL  src/billing/refunds.ts:12
+     · function name contains sensitive keyword: refund
+     · payment/financial signal detected
+
+──────────────────────────────────────────────────────
+Protect risky tools with AgentPI → https://github.com/treadiehq/agentpi
+```
+
+Risk levels:
+- `🔴 DESTRUCTIVE` — delete, remove, destroy, purge, drop
+- `🟠 NEEDS APPROVAL` — refund, charge, deploy, reset, revoke
+- `🟡 REVIEW` — create, update, send, save, sync
+- `🟢 SAFE` — get, list, fetch, search, find, query
+
+> **Note:** Detection is heuristic — based on function names and body patterns. It is a fast discovery tool, not a complete static analyser. Expect some false positives in v1.
+
 ### `scan`
 
 Probes any API cold, no AgentPI required, and reports which agent auth capabilities are present or missing.
@@ -19,24 +64,6 @@ Probes any API cold, no AgentPI required, and reports which agent auth capabilit
 ```bash
 agentpi scan <toolBaseUrl>
 ```
-
-Example output:
-
-```
-Agent compatibility report
-
-  ✓ OAuth supported
-  ✓ API tokens supported
-  ✗ Agent provisioning missing
-  ✗ Scoped tokens missing
-
-  Install AgentPI to enable agent onboarding:
-
-    npm install @agentpi/sdk
-    https://github.com/treadiehq/agentpi
-```
-
-Exits with code 0 if agent provisioning is detected, code 1 otherwise.
 
 ### `verify`
 
