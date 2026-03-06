@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { connect } from './connect';
 import { demo } from './demo';
+import { scan } from './scan';
 import { verify } from './verify';
 
 const args = process.argv.slice(2);
@@ -13,9 +14,10 @@ function getArg(name: string, fallback: string): string {
 
 function printUsage() {
   console.error('Usage:');
-  console.error('  agentpi connect <toolBaseUrl> [options]   Connect to a tool');
+  console.error('  agentpi scan <toolBaseUrl>                Scan any API for agent compatibility');
+  console.error('  agentpi connect <toolBaseUrl> [options]   Connect an agent to a tool');
   console.error('  agentpi demo <toolBaseUrl>                Full demo: connect + API call');
-  console.error('  agentpi verify <toolBaseUrl>              Verify tool conformance');
+  console.error('  agentpi verify <toolBaseUrl>              Protocol conformance check (post-install)');
   console.error('');
   console.error('Connect options:');
   console.error('  --name <name>      Workspace name (default: "My Workspace")');
@@ -59,6 +61,12 @@ switch (command) {
   case 'demo':
     demo(toolBaseUrl).catch((err) => {
       console.error('\n❌ Demo failed:', err.message || err);
+      process.exit(1);
+    });
+    break;
+  case 'scan':
+    scan(toolBaseUrl).catch((err) => {
+      console.error('\n❌ Scan failed:', err.message || err);
       process.exit(1);
     });
     break;

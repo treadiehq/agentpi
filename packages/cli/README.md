@@ -1,6 +1,6 @@
 # AgentPI CLI
 
-CLI for testing and onboarding the AgentPI connect flow.
+Scan any API for agent compatibility. Connect agents. Verify AgentPI integrations.
 
 The CLI is mainly for local/dev workflows. Production agents should call the HTTP protocol directly from their runtime.
 
@@ -12,9 +12,45 @@ npm i -g @agentpi/cli
 
 ## Commands
 
+### `scan`
+
+Probes any API cold, no AgentPI required, and reports which agent auth capabilities are present or missing.
+
+```bash
+agentpi scan <toolBaseUrl>
+```
+
+Example output:
+
+```
+Agent compatibility report
+
+  ✓ OAuth supported
+  ✓ API tokens supported
+  ✗ Agent provisioning missing
+  ✗ Scoped tokens missing
+
+  Install AgentPI to enable agent onboarding:
+
+    npm install @agentpi/sdk
+    https://github.com/treadiehq/agentpi
+```
+
+Exits with code 0 if agent provisioning is detected, code 1 otherwise.
+
+### `verify`
+
+Deep protocol conformance check, use this after installing AgentPI to validate your integration. Requires the AgentPI service to be running.
+
+```bash
+agentpi verify <toolBaseUrl>
+```
+
+Checks discovery shape, connect flow, response shape, replay protection, and idempotency conflict behaviour across 17 points.
+
 ### `connect`
 
-Runs the full connect flow: discover -> grant -> connect.
+Runs the full connect flow: discover → grant → connect.
 
 ```bash
 agentpi connect <toolBaseUrl> [options]
@@ -37,14 +73,6 @@ Runs the connect flow and prints resulting credentials. In `http_signature` mode
 
 ```bash
 agentpi demo <toolBaseUrl>
-```
-
-### `verify`
-
-Runs conformance checks against a tool: discovery shape, connect flow, response shape, replay protection, and idempotency conflict behavior.
-
-```bash
-agentpi verify <toolBaseUrl>
 ```
 
 ## Vestauth auto-init

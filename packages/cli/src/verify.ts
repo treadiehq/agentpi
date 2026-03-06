@@ -50,10 +50,10 @@ async function signedHeaders(method: string, url: string) {
 
 export async function verify(toolBaseUrl: string) {
   console.log('');
-  console.log('╔═══════════════════════════════════════════════╗');
-  console.log('║        AgentPI Conformance Verifier           ║');
-  console.log('╚═══════════════════════════════════════════════╝');
-  console.log(`\nTarget: ${toolBaseUrl}`);
+  console.log('╔════════════════════════════════════════════════════╗');
+  console.log('║         AgentPI — Protocol Conformance Check       ║');
+  console.log('╚════════════════════════════════════════════════════╝');
+  console.log(`\n  Target: ${toolBaseUrl}`);
 
   // 1. Discovery
   console.log('\n── Discovery ──');
@@ -251,17 +251,16 @@ function summarize() {
   const failed = checks.filter((c) => !c.pass).length;
   const total = checks.length;
 
-  console.log('\n══════════════════════════════════════════');
+  console.log('\n  ════════════════════════════════════════════════════');
   if (failed === 0) {
-    console.log(`  ✅ All ${total} checks passed`);
+    console.log(`  ✅  All ${total} checks passed`);
   } else {
-    console.log(`  ${passed}/${total} passed, ${failed} failed`);
-    console.log('');
+    console.log(`  ${passed}/${total} checks passed, ${failed} failed\n`);
     checks.filter((c) => !c.pass).forEach((c) => {
-      console.log(`  ❌ ${c.name}: ${c.detail}`);
+      console.log(`  ✗  ${c.name}: ${c.detail}`);
     });
   }
-  console.log('══════════════════════════════════════════');
+  console.log('  ════════════════════════════════════════════════════');
   console.log('');
 
   if (failed > 0) process.exit(1);
