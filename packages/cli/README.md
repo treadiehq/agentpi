@@ -10,6 +10,13 @@ The CLI is mainly for local/dev workflows. Production agents should call the HTT
 npm i -g @agentpi/cli
 ```
 
+Or run without installing:
+
+```bash
+npx @agentpi/cli audit ./src
+npx @agentpi/cli scan https://your-api.com
+```
+
 ## Commands
 
 ### `audit`
@@ -23,39 +30,7 @@ agentpi audit --json       # machine-readable JSON output (for CI)
 agentpi audit --path ./src # explicit path flag
 ```
 
-Example output:
-
-```
-AgentPI — Audit Report
-──────────────────────────────────────────────────────
-Path: ./src    Files scanned: 42
-
-  🔴 DESTRUCTIVE    1     🟠 NEEDS APPROVAL   2
-  🟡 REVIEW         3     🟢 SAFE             5
-
-High risk — Destructive
-  1. deleteUser()
-     🔴  DESTRUCTIVE    src/actions/users.ts:48
-     · function name contains destructive keyword: delete
-     · database delete mutation detected
-
-High risk — Needs Approval
-  2. refundPayment()
-     🟠  NEEDS APPROVAL  src/billing/refunds.ts:12
-     · function name contains sensitive keyword: refund
-     · payment/financial signal detected
-
-──────────────────────────────────────────────────────
-Protect risky tools with AgentPI → https://github.com/treadiehq/agentpi
-```
-
-Risk levels:
-- `🔴 DESTRUCTIVE` — delete, remove, destroy, purge, drop
-- `🟠 NEEDS APPROVAL` — refund, charge, deploy, reset, revoke
-- `🟡 REVIEW` — create, update, send, save, sync
-- `🟢 SAFE` — get, list, fetch, search, find, query
-
-> **Note:** Detection is heuristic — based on function names and body patterns. It is a fast discovery tool, not a complete static analyser. Expect some false positives in v1.
+> **Note:** Detection is heuristic, based on function names and body patterns. It is a fast discovery tool, not a complete static analyser. Expect some false positives in v1.
 
 ### `scan`
 
