@@ -1,4 +1,4 @@
-import { Project, SyntaxKind, Node } from 'ts-morph';
+import { Project, Node } from 'ts-morph';
 import { relative } from 'path';
 import type { ToolFinding, FunctionKind } from './types';
 import { classifyRisk } from './classifyRisk';
@@ -101,13 +101,13 @@ export function parseFile(filePath: string, cwd: string): ToolFinding[] {
     });
   }
 
-  // 3. Class methods in suspicious files (exported classes or suspicious filenames)
+  // 3. Class methods — only from exported classes.
+  // Non-exported classes are internal implementation detail; including their
+  // methods in suspicious files generates too much noise.
   for (const cls of sourceFile.getClasses()) {
-    const clsExported = cls.isExported();
-    if (!clsExported && !suspicious) continue;
+    if (!cls.isExported()) continue;
 
     for (const method of cls.getMethods()) {
-      // Skip private/protected methods
       const scope = method.getScope();
       if (scope === 'private' || scope === 'protected') continue;
 
@@ -122,7 +122,7 @@ export function parseFile(filePath: string, cwd: string): ToolFinding[] {
         filePath: relPath,
         functionName: name,
         line,
-        exported: clsExported,
+        exported: true,
         kind: 'method' as FunctionKind,
         risk,
         reasons,
@@ -131,5 +131,13 @@ export function parseFile(filePath: string, cwd: string): ToolFinding[] {
     }
   }
 
-  return findings;
+  // Deduplicate — re-exports or barrel files can surface the same symbol
+  // multiple times (same file + name + line). Keep first occurrence.
+  const seen = new Set<string>();
+  return findings.filter((f) => {
+    const key = `${f.filePath}::${f.functionName}::${f.line}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
