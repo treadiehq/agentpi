@@ -71,10 +71,27 @@ pnpm verify  # 18-point conformance check
 
 ---
 
+## Not sure if your API is agent-ready?
+
+Scan any API for agent auth compatibility:
+
+```bash
+npx @agentpi/cli scan https://your-api.com
+```
+
+Or audit your codebase for functions that are risky for agents to call:
+
+```bash
+npx @agentpi/cli audit ./src
+```
+
+---
+
 ## More
 
 - [**DETAILED.md**](DETAILED.md) — architecture, config reference, custom stores, security model, error codes
 - [`apps/example-tool-api`](apps/example-tool-api) — full NestJS + Prisma example
+- [`packages/cli`](packages/cli) — `agentpi scan`, `agentpi audit`, `agentpi connect`
 - [Vestauth](https://github.com/vestauth/vestauth) — HTTP signature auth used by agents
 
 ---
