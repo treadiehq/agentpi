@@ -47,7 +47,12 @@ export function printTerminalReport(summary: ScanSummary, targetPath: string) {
   console.log('');
 
   if (findings.length === 0) {
-    console.log('  No agent-callable functions detected.');
+    if (scannedFiles === 0) {
+      console.log('  No .ts, .tsx, .js, .jsx, .mjs, or .cjs files found in that path.');
+      console.log('  Check the path or add JavaScript/TypeScript source files.');
+    } else {
+      console.log('  No agent-callable functions detected.');
+    }
     console.log('');
     console.log('  ────────────────────────────────────────────────────');
     console.log('  Protect risky tools with AgentPI → https://github.com/treadiehq/agentpi');

@@ -1,6 +1,6 @@
 {
   "name": "@agentpi/cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "bin": {
     "agentpi": "./dist/cli.js"
   },

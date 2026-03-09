@@ -17,6 +17,8 @@ npx @agentpi/cli audit ./src
 npx @agentpi/cli scan https://your-api.com
 ```
 
+If you see `No matching version found` or `ETARGET`, use the latest (omit the version) or ensure your registry is `https://registry.npmjs.org/`.
+
 ## Commands
 
 ### `audit`
