@@ -55,7 +55,7 @@ export function printTerminalReport(summary: ScanSummary, targetPath: string) {
     }
     console.log('');
     console.log('  ────────────────────────────────────────────────────');
-    console.log('  Protect risky tools with AgentPI → https://github.com/treadiehq/agentpi');
+    console.log('  Gate risky tools with AgentPI scopes → https://github.com/treadiehq/agentpi');
     console.log('');
     return;
   }
@@ -91,6 +91,6 @@ export function printTerminalReport(summary: ScanSummary, targetPath: string) {
   }
 
   console.log('  ────────────────────────────────────────────────────');
-  console.log('  Protect risky tools with AgentPI → https://github.com/treadiehq/agentpi');
+  console.log('  Gate risky tools with AgentPI scopes → https://github.com/treadiehq/agentpi');
   console.log('');
 }
