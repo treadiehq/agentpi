@@ -32,6 +32,8 @@ agentpi audit --json       # machine-readable JSON output (for CI)
 agentpi audit --path ./src # explicit path flag
 ```
 
+**Risk levels:** **Safe** = read-only; fine for agents. **Review** = medium risk; a human should decide if agents are allowed to use it. **Needs approval** = higher risk; agents shouldn’t call it unless a human has explicitly approved that action. **Destructive** = high risk; irreversible or dangerous operations.
+
 > **Note:** Detection is heuristic, based on function names and body patterns. It is a fast discovery tool, not a complete static analyser. Expect some false positives in v1.
 
 ### `scan`
